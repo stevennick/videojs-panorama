@@ -18,6 +18,9 @@ var Canvas = function (baseComponent, THREE, settings = {}) {
             //define camera
             this.camera = new THREE.PerspectiveCamera(options.initFov, this.width / this.height, 1, 2000);
             this.camera.target = new THREE.Vector3( 0, 0, 0 );
+            if (this.settings.VREnable && this.settings.autoMobileOrientation && this.controls === undefined && THREE.DeviceOrientationControls !== undefined) {
+                this.controls = new THREE.DeviceOrientationControls(this.camera);
+            }
 
             //define geometry
             var geometry = (this.videoType === "equirectangular")? new THREE.SphereGeometry(500, 60, 40): new THREE.SphereBufferGeometry( 500, 60, 40 ).toNonIndexed();
@@ -86,12 +89,19 @@ var Canvas = function (baseComponent, THREE, settings = {}) {
 
             this.cameraL = new THREE.PerspectiveCamera(this.camera.fov, this.width /2 / this.height, 1, 2000);
             this.cameraR = new THREE.PerspectiveCamera(this.camera.fov, this.width /2 / this.height, 1, 2000);
+            if (this.settings.VREnable && this.settings.autoMobileOrientation && this.controlsL === undefined && THREE.DeviceOrientationControls !== undefined) {
+                this.controlsL = new THREE.DeviceOrientationControls(this.cameraL);
+                this.controlsR = new THREE.DeviceOrientationControls(this.cameraR);
+            }
         },
 
         disableVR: function () {
             this.VRMode = false;
             this.renderer.setViewport( 0, 0, this.width, this.height );
             this.renderer.setScissor( 0, 0, this.width, this.height );
+
+            if(this.controlsL) this.controlsL = undefined;
+            if(this.controlsR) this.controlsR = undefined;
         },
 
         handleResize: function () {
@@ -141,10 +151,15 @@ var Canvas = function (baseComponent, THREE, settings = {}) {
 
         render: function(){
             parent.render.call(this);
-            this.camera.target.x = 500 * Math.sin( this.phi ) * Math.cos( this.theta );
-            this.camera.target.y = 500 * Math.cos( this.phi );
-            this.camera.target.z = 500 * Math.sin( this.phi ) * Math.sin( this.theta );
-            this.camera.lookAt( this.camera.target );
+
+            if (this.controls) {
+                this.controls.update();
+            } else {
+                this.camera.target.x = 500 * Math.sin( this.phi ) * Math.cos( this.theta );
+                this.camera.target.y = 500 * Math.cos( this.phi );
+                this.camera.target.z = 500 * Math.sin( this.phi ) * Math.sin( this.theta );
+                this.camera.lookAt( this.camera.target );
+            }
 
             if(!this.VRMode){
                 this.renderer.render( this.scene, this.camera );
@@ -164,12 +179,20 @@ var Canvas = function (baseComponent, THREE, settings = {}) {
                     var targetL = Util.deepCopy(this.camera.target);
                     targetL.x = 500 * Math.sin( this.phi ) * Math.cos( thetaL );
                     targetL.z = 500 * Math.sin( this.phi ) * Math.sin( thetaL );
-                    this.cameraL.lookAt(targetL);
+                    if(this.controlsL) {
+                        this.controlsL.update();
+                    } else {
+                        this.cameraL.lookAt(targetL);
+                    }
 
                     var targetR = Util.deepCopy(this.camera.target);
                     targetR.x = 500 * Math.sin( this.phi ) * Math.cos( thetaR );
                     targetR.z = 500 * Math.sin( this.phi ) * Math.sin( thetaR );
-                    this.cameraR.lookAt(targetR);
+                    if(this.controlsR) {
+                        this.controlsR.update();
+                    } else {
+                        this.cameraR.lookAt(targetR);
+                    }
                 }
                 // render left eye
                 this.renderer.setViewport( 0, 0, viewPortWidth, viewPortHeight );
