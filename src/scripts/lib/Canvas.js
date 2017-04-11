@@ -92,6 +92,10 @@ var Canvas = function (baseComponent, THREE, settings = {}) {
             if (this.settings.VREnable && this.settings.autoMobileOrientation && this.controlsL === undefined && THREE.DeviceOrientationControls !== undefined) {
                 this.controlsL = new THREE.DeviceOrientationControls(this.cameraL);
                 this.controlsR = new THREE.DeviceOrientationControls(this.cameraR);
+                var lonL = THREE.Math.degToRad( 0 + this.settings.VRGapDegree );
+                var lonR = THREE.Math.degToRad( 0 - this.settings.VRGapDegree );
+                this.controlsL.updateAlphaOffsetAngle(lonL);
+                this.controlsR.updateAlphaOffsetAngle(lonR);
             }
         },
 
